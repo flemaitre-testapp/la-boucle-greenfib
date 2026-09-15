@@ -1,0 +1,629 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La boucle du café partagé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --paper:#ECE4D3; --card:#FBF8F1; --ink:#2C2016; --ink-soft:#6E5F4E;
+  --green:#4F7A34; --green-d:#39591F; --green-t:#E4EEDA;
+  --coral:#DF7048; --coral-d:#B04E28; --coral-t:#F7E4DA;
+  --line:#D8CDB6; --line-s:#C6B896; --radius:16px;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --serif:'Fraunces','Iowan Old Style',Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;background:var(--paper);position:relative;padding-bottom:24px}
+button{font-family:inherit;font-size:16px;cursor:pointer}
+input,textarea,select{font-family:inherit;font-size:16px}
+a{color:var(--green-d)}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.15;margin:0}
+.hero-t{font-size:30px;font-weight:600;letter-spacing:-.5px}
+p{margin:0}
+.mut{color:var(--ink-soft)}
+.sm{font-size:14px}
+.xs{font-size:12.5px}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;position:sticky;top:0;background:linear-gradient(var(--paper) 78%,transparent);z-index:20}
+.brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-weight:600;font-size:18px;letter-spacing:-.3px}
+.knot{width:26px;height:26px;flex:0 0 auto}
+.menu-btn{background:none;border:none;color:var(--ink);padding:6px;border-radius:10px;display:flex}
+.menu{position:absolute;right:14px;top:52px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 12px 30px rgba(44,32,22,.14);min-width:190px}
+.menu button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:none;padding:11px 12px;border-radius:10px;color:var(--ink)}
+.menu button:hover{background:var(--green-t)}
+.wrap{padding:8px 18px 0}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px 16px;border-radius:14px;border:1px solid var(--line-s);background:var(--card);color:var(--ink);font-weight:500;transition:transform .12s ease}
+.btn:active{transform:scale(.985)}
+.btn.pri{background:var(--green);border-color:var(--green);color:#fff}
+.btn.cor{background:var(--coral);border-color:var(--coral);color:#fff}
+.btn.ghost{background:none;border:none;color:var(--green-d);font-weight:500;padding:10px}
+.btn-row{display:flex;gap:10px}
+.stack>*+*{margin-top:11px}
+.back{display:inline-flex;gap:7px;align-items:center;background:none;border:none;color:var(--ink-soft);padding:8px 0;margin:4px 0}
+
+/* cards / fields */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.field{display:block;margin-top:14px}
+.field label{display:block;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:500}
+.field input,.field textarea,.field select{width:100%;padding:12px 13px;border:1px solid var(--line-s);border-radius:12px;background:#fff;color:var(--ink)}
+.field textarea{resize:vertical;min-height:64px}
+input:focus,textarea:focus,select:focus,.btn:focus-visible,button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.consent{display:flex;gap:11px;align-items:flex-start;margin-top:16px;background:var(--green-t);padding:13px;border-radius:12px}
+.consent input{margin-top:3px;width:18px;height:18px;flex:0 0 auto;accent-color:var(--green)}
+.err{color:var(--coral-d);font-size:13.5px;margin-top:8px;display:none}
+.err.on{display:block}
+
+/* photo picker */
+.photo-pick{margin-top:14px;border:1.5px dashed var(--line-s);border-radius:14px;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--ink-soft);background:#fff;text-align:center;padding:14px;overflow:hidden;position:relative}
+.photo-pick img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo-pick input{position:absolute;inset:0;opacity:0}
+
+/* stat pills */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.stat b{font-family:var(--serif);font-size:26px;font-weight:600;display:block;line-height:1}
+.stat span{font-size:12.5px;color:var(--ink-soft)}
+
+/* thread of meetings */
+.thread{margin-top:16px;position:relative;padding-left:28px}
+.thread:before{content:"";position:absolute;left:9px;top:10px;bottom:10px;width:2px;background:var(--line-s)}
+.node{position:relative;margin-bottom:14px}
+.node .dot{position:absolute;left:-27px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--green);border:3px solid var(--paper);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600}
+.node.you .dot{background:var(--coral)}
+.node .m{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;display:flex;gap:11px;align-items:center}
+.node .m img{width:52px;height:52px;border-radius:11px;object-fit:cover;flex:0 0 auto;background:var(--green-t)}
+
+/* wall */
+.wall{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.wall figure{margin:0;border-radius:14px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:pointer}
+.wall img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--green-t)}
+.wall figcaption{padding:8px 10px;font-size:12px}
+.wall .nm{font-weight:500}
+.wall .mt{color:var(--ink-soft)}
+.empty{text-align:center;color:var(--ink-soft);padding:26px 10px;font-size:14.5px}
+
+/* map */
+.map{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.map svg{display:block;width:100%;height:auto;background:#F1ECDF}
+.mland{fill:#E4DCC7;stroke:var(--line-s);stroke-width:1}
+.mpt{fill:var(--green);stroke:#fff;stroke-width:2;cursor:pointer}
+.mpt.you{fill:var(--coral)}
+.mchain{fill:none;stroke:var(--coral);stroke-width:2.4;stroke-dasharray:3 4;opacity:.85}
+.mpop{padding:12px 14px;border-top:1px solid var(--line);display:none;gap:12px;align-items:center}
+.mpop.on{display:flex}
+.mpop img{width:54px;height:54px;border-radius:11px;object-fit:cover}
+
+/* chips / section headers */
+.eyebrow{font-family:var(--serif);font-size:20px;font-weight:600;margin-top:26px}
+.steps{margin-top:12px}
+.step{display:flex;gap:13px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line)}
+.step .n{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--green);flex:0 0 26px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--green-t);color:var(--green-d);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:500}
+
+/* transmit */
+.qrbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;margin-top:16px}
+#qr{width:180px;height:180px;display:flex;align-items:center;justify-content:center}
+#qr img,#qr canvas{width:180px!important;height:180px!important}
+.code{font-family:'Fraunces',serif;font-weight:600;font-size:30px;letter-spacing:2px;color:var(--coral-d);background:var(--coral-t);border-radius:12px;padding:9px 18px;margin-top:16px}
+
+/* confirm */
+.confirm{text-align:center;padding:30px 12px}
+.seal{width:82px;height:82px;margin:0 auto 6px}
+.seal circle{fill:none;stroke:var(--green);stroke-width:5}
+.seal .ring{stroke-dasharray:245;stroke-dashoffset:245;animation:draw .7s ease forwards}
+.seal .tick{stroke:var(--green);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:40;stroke-dashoffset:40;animation:draw .5s .5s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.big-num{font-family:var(--serif);font-size:56px;font-weight:600;color:var(--green);line-height:1}
+@media(prefers-reduced-motion:reduce){.seal .ring,.seal .tick{animation:none;stroke-dashoffset:0}}
+
+.divider{height:1px;background:var(--line);margin:20px 0}
+.note{font-size:12.5px;color:var(--ink-soft);margin-top:10px;line-height:1.5}
+.footer{padding:26px 18px 10px;color:var(--ink-soft);font-size:12px;line-height:1.6}
+.footer a{color:var(--green-d)}
+.orsep{display:flex;align-items:center;gap:12px;color:var(--ink-soft);font-size:13px;margin:16px 0}
+.orsep:before,.orsep:after{content:"";height:1px;background:var(--line);flex:1}
+.banner{background:var(--coral-t);color:var(--coral-d);border-radius:12px;padding:11px 13px;font-size:13.5px;margin-top:12px}
+.hide{display:none}
+</style>
+
+<div id="app">
+  <div class="top">
+    <div class="brand">
+      <svg class="knot" viewBox="0 0 40 40" aria-hidden="true"><path d="M12 20c0-6 16-6 16 0s-16 6-16 0" fill="none" stroke="#4F7A34" stroke-width="3.4"/><circle cx="12" cy="20" r="3.4" fill="#DF7048"/><circle cx="28" cy="20" r="3.4" fill="#4F7A34"/></svg>
+      <span>la boucle</span>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div class="menu hide" id="menu">
+      <button data-go="home">🏠 Accueil</button>
+      <button data-go="explore">🗺️ Découvrir les boucles</button>
+      <button data-go="recover">🔑 Récupérer une boucle</button>
+      <button data-go="admin">🔒 Espace admin</button>
+    </div>
+  </div>
+  <div id="view" class="wrap"></div>
+  <div class="footer">
+    Prototype — La boucle du café partagé · gobelets Greenfib®<br>
+    Seuls les prénoms et une ville approximative sont publiés. <a id="lnkRetrait" href="#">Demander un retrait</a> · <a id="lnkPriv" href="#">Confidentialité</a>
+  </div>
+</div>
+
+<script>
+/* ---------- persistence layer (window.storage or in-memory fallback) ---------- */
+const mem = new Map();
+const hasStore = typeof window!=='undefined' && window.storage && typeof window.storage.get==='function';
+async function sGet(k, shared){ try{ if(hasStore){ const r=await window.storage.get(k,shared); return r?JSON.parse(r.value):null;} }catch(e){} return mem.has(k+shared)?mem.get(k+shared):null; }
+async function sSet(k,v,shared){ const s=JSON.stringify(v); try{ if(hasStore){ await window.storage.set(k,s,shared); return;} }catch(e){} mem.set(k+shared,v); }
+async function sDel(k,shared){ try{ if(hasStore){ await window.storage.delete(k,shared); return;} }catch(e){} mem.delete(k+shared); }
+async function sList(prefix,shared){ try{ if(hasStore){ const r=await window.storage.list(prefix,shared); return r?r.keys:[];} }catch(e){} return [...mem.keys()].filter(x=>x.endsWith(shared)&&x.startsWith(prefix)).map(x=>x.slice(0,-String(shared).length)); }
+
+const LOOP=id=>'loop:'+id;
+async function getLoop(id){ return await sGet(LOOP(id),true); }
+async function putLoop(l){ await sSet(LOOP(l.pubId),l,true); }
+async function allLoops(){ const keys=await sList('loop:',true); const out=[]; for(const k of keys){ const l=await sGet(k,true); if(l) out.push(l);} return out; }
+async function getMine(){ return (await sGet('mine',false))||[]; }
+async function setMine(m){ await sSet('mine',m,false); }
+async function addMine(entry){ const m=await getMine(); const i=m.findIndex(x=>x.pubId===entry.pubId); if(i>=0)m[i]=entry; else m.push(entry); await setMine(m); }
+
+/* ---------- helpers ---------- */
+const rnd=(n)=>Math.random().toString(36).slice(2,2+n);
+const uid=()=>Date.now().toString(36)+rnd(4);
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtDate=d=>{try{return new Date(d+'T00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});}catch(e){return d;}};
+const shortCode=()=>'CAFE-'+Math.floor(100+Math.random()*900);
+const escapeHtml=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
+const GAZ={ 'paris':[48.86,2.35],'rennes':[48.11,-1.68],'nantes':[47.22,-1.55],'brest':[48.39,-4.49],'quimper':[47.99,-4.10],'lorient':[47.75,-3.37],'vannes':[47.66,-2.76],'saint-malo':[48.65,-2.01],'st-malo':[48.65,-2.01],'ploermel':[47.93,-2.40],'josselin':[47.95,-2.55],'redon':[47.65,-2.08],'neant-sur-yvel':[47.98,-2.31],'lyon':[45.76,4.84],'marseille':[43.30,5.37],'bordeaux':[44.84,-0.58],'toulouse':[43.60,1.44],'lille':[50.63,3.06],'strasbourg':[48.58,7.75],'nice':[43.70,7.27],'montpellier':[43.61,3.88],'nancy':[48.69,6.18],'grenoble':[45.19,5.72],'angers':[47.47,-0.55],'le mans':[48.00,0.20],'tours':[47.39,0.69],'caen':[49.18,-0.37],'rouen':[49.44,1.10],'reims':[49.26,4.03],'dijon':[47.32,5.04],'clermont-ferrand':[45.78,3.09],'pau':[43.30,-0.37],'la rochelle':[46.16,-1.15],'saint-brieuc':[48.51,-2.77],'morlaix':[48.58,-3.83],'concarneau':[47.87,-3.92],'auray':[47.67,-2.98],'pontivy':[48.07,-2.96],'fougeres':[48.35,-1.20],'vitre':[48.12,-1.21],'dinan':[48.45,-2.05],'carnac':[47.58,-3.08],'perros-guirec':[48.81,-3.44],'douarnenez':[48.09,-4.33] };
+function geocode(city){ const k=norm(city); if(GAZ[k]) return {lat:GAZ[k][0],lng:GAZ[k][1],approx:false}; for(const g in GAZ){ if(k&&(g.includes(k)||k.includes(g))) return {lat:GAZ[g][0],lng:GAZ[g][1],approx:false}; } const j=()=>(Math.random()-.5)*1.2; return {lat:46.7+j(),lng:2.4+j(),approx:true}; }
+
+function resizeImage(file,max,q){ return new Promise((res)=>{ const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ let{width:w,height:h}=img; const sc=Math.min(1,max/Math.max(w,h)); w=Math.round(w*sc);h=Math.round(h*sc); const c=document.createElement('canvas');c.width=w;c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); res(c.toDataURL('image/jpeg',q)); }; img.src=r.result; }; r.readAsDataURL(file); }); }
+
+const baseURL=()=>location.origin+location.pathname;
+function qs(){ const p=new URLSearchParams(location.search); return {join:p.get('join'),code:p.get('code'),loop:p.get('loop')}; }
+
+/* ---------- app state ---------- */
+let S={ pending:null }; // pending photo dataurl etc
+const V=document.getElementById('view');
+function render(html){ V.innerHTML=html; window.scrollTo(0,0); }
+
+/* ---------- boot / router ---------- */
+async function boot(){
+  const q=qs();
+  if(q.join&&q.code){ return startJoin(q.join,q.code); }
+  if(q.loop){ return viewLoop(q.loop); }
+  const mine=await getMine();
+  for(let i=mine.length-1;i>=0;i--){ const l=await getLoop(mine[i].pubId); if(l&&l.status==='active'&&l.holderSecret===mine[i].holderSecret){ return holderHome(l); } }
+  return homeDefault();
+}
+
+/* ---------- screen: default home ---------- */
+async function homeDefault(){
+  const loops=await allLoops(); const st=stats(loops);
+  render(`
+  <h1 class="hero-t">Un gobelet. Un café.<br>Une rencontre.<br><span style="color:var(--green)">Puis une autre.</span></h1>
+  <p class="mut" style="margin-top:12px">La boucle du café partagé suit le voyage de gobelets Greenfib® transmis de personne en personne. Partagez un café, ajoutez votre rencontre, faites continuer la boucle.</p>
+  <div class="stack" style="margin-top:22px">
+    <button class="btn pri" data-go="start">☕ Démarrer une nouvelle boucle</button>
+    <button class="btn" data-go="join">📷 Rejoindre une boucle</button>
+    <button class="btn ghost" data-go="explore">Découvrir les boucles en circulation →</button>
+  </div>
+  <div class="eyebrow">Comment ça marche&nbsp;?</div>
+  <div class="steps">
+    ${['Je partage un café.','J’ajoute notre photo.','Je transmets le gobelet et sa boucle.','Son histoire continue.'].map((t,i)=>`<div class="step"><div class="n">${i+1}</div><div>${t}</div></div>`).join('')}
+  </div>
+  ${st.cafes>0?`<div class="stats">
+    <div class="stat"><b>${st.loops}</b><span>boucles en circulation</span></div>
+    <div class="stat"><b>${st.cafes}</b><span>cafés partagés</span></div>
+    <div class="stat"><b>${st.cities}</b><span>villes atteintes</span></div>
+    <div class="stat"><b>${st.longest}</b><span>plus longue chaîne</span></div>
+  </div>`:''}
+  <div class="eyebrow">Greenfib® &amp; le réemploi</div>
+  <p class="mut sm" style="margin-top:8px">Le gobelet est fabriqué dans une matière biosourcée, durable, pensée pour l’usage répété. L’idée n’est pas seulement la matière&nbsp;: c’est le passage d’un objet possédé puis jeté à un objet qui circule, crée des rencontres et s’inscrit dans le temps.</p>
+  `);
+}
+
+/* ---------- screen: start a loop ---------- */
+function startForm(){
+  render(`
+  <button class="back" data-go="home">← Retour</button>
+  <h1>Créer votre boucle</h1>
+  <p class="mut sm" style="margin-top:6px">Vous devenez le premier maillon. Pas de compte&nbsp;: la boucle vit sur votre téléphone.</p>
+  <div class="field"><label>Votre prénom</label><input id="f_name" placeholder="Camille" autocomplete="given-name"></div>
+  <div class="field"><label>Ville ou lieu approximatif de départ</label><input id="f_city" placeholder="Rennes"></div>
+  <div class="field"><label>Date de départ</label><input id="f_date" type="date" value="${today()}"></div>
+  <label class="photo-pick" id="pick"><span style="font-size:26px">📷</span><span class="sm">Une première photo avec le gobelet (facultatif)</span><input type="file" accept="image/*" capture="environment" id="f_photo"></label>
+  <div class="err" id="err"></div>
+  <div class="stack" style="margin-top:18px"><button class="btn pri" id="create">Créer ma boucle</button></div>
+  `);
+  hookPhoto('pick','f_photo');
+  document.getElementById('create').onclick=createLoop;
+}
+async function createLoop(){
+  const name=val('f_name'),city=val('f_city'),date=val('f_date'),err=document.getElementById('err');
+  if(!name){return showErr(err,'Indiquez votre prénom.');}
+  if(!city){return showErr(err,'Indiquez une ville de départ.');}
+  const g=geocode(city);
+  const loop={ pubId:uid(), createdAt:Date.now(), status:'active', starter:name, startCity:city, startLat:g.lat, startLng:g.lng, holderSecret:rnd(12), recoveryCode:'BOUCLE-'+rnd(6).toUpperCase(), transfer:null, meetings:[] };
+  if(S.pending){ loop.startPhoto=S.pending; S.pending=null; }
+  await putLoop(loop);
+  await addMine({pubId:loop.pubId,recoveryCode:loop.recoveryCode,holderSecret:loop.holderSecret});
+  recoveryScreen(loop,()=>holderHome(loop));
+}
+
+/* recovery info shown once */
+function recoveryScreen(loop,next){
+  render(`
+  <h1>Votre boucle est lancée&nbsp;🎉</h1>
+  <p class="mut" style="margin-top:10px">Conservez ce lien&nbsp;: c’est le seul moyen de retrouver votre boucle si vous changez de téléphone ou effacez votre navigateur. Aucune donnée personnelle ne vous est demandée.</p>
+  <div class="card" style="margin-top:16px">
+    <div class="xs mut">Votre code de récupération</div>
+    <div class="code" style="font-size:24px;margin-top:6px;display:inline-block">${loop.recoveryCode}</div>
+    <div class="stack" style="margin-top:14px">
+      <button class="btn" id="copyRec">Copier le lien de récupération</button>
+    </div>
+    <div class="note">Gardez-le pour vous. Ce lien redonne la main sur la boucle&nbsp;: il ne se partage pas comme un lien public.</div>
+  </div>
+  <div class="stack" style="margin-top:18px"><button class="btn pri" id="next">Continuer</button></div>
+  `);
+  document.getElementById('copyRec').onclick=()=>copy(`${baseURL()}?recover=${loop.pubId}&rc=${encodeURIComponent(loop.recoveryCode)}`,'copyRec','Lien copié ✓');
+  document.getElementById('next').onclick=next;
+}
+
+/* ---------- screen: holder home ---------- */
+async function holderHome(loop){
+  const fresh=await getLoop(loop.pubId)||loop; loop=fresh;
+  const n=loop.meetings.filter(m=>!m.hidden).length; const maillon=loop.meetings.length+1;
+  const cities=new Set([norm(loop.startCity),...loop.meetings.map(m=>norm(m.city))]).size;
+  const last=[...loop.meetings].reverse().find(m=>!m.hidden);
+  render(`
+  <div class="chip">☕ Vous détenez ce gobelet</div>
+  <h1 style="margin-top:12px">Votre gobelet<br>poursuit son voyage</h1>
+  <div class="stats">
+    <div class="stat"><b>${maillon}<span style="font-size:15px;font-family:var(--sans)">e</span></b><span>maillon (vous)</span></div>
+    <div class="stat"><b>${n}</b><span>rencontres</span></div>
+    <div class="stat"><b>${cities}</b><span>villes traversées</span></div>
+    <div class="stat"><b>${loop.recoveryCode.slice(0,10)}…</b><span>votre code</span></div>
+  </div>
+  ${last&&last.photo?`<div class="map" style="border-radius:16px"><img src="${last.photo}" style="width:100%;display:block" alt="Dernière rencontre"><div style="padding:11px 14px" class="sm"><b>${escapeHtml(last.from)} → ${escapeHtml(last.to)}</b> · ${escapeHtml(last.city)} · ${fmtDate(last.date)}</div></div>`:''}
+  <div class="stack" style="margin-top:16px">
+    <button class="btn cor" id="transmit">☕ Partager un café &amp; transmettre</button>
+    <button class="btn" data-loop="${loop.pubId}" data-go="viewloop">Voir le parcours de ma boucle</button>
+    <button class="btn ghost" data-go="explore">Découvrir toutes les boucles →</button>
+  </div>
+  `);
+  document.getElementById('transmit').onclick=()=>transmitScreen(loop.pubId);
+}
+
+/* ---------- screen: transmit ---------- */
+async function transmitScreen(pubId){
+  let loop=await getLoop(pubId); if(!loop) return homeDefault();
+  const now=Date.now();
+  if(!loop.transfer || loop.transfer.used || loop.transfer.expiresAt<now){
+    loop.transfer={ token:rnd(16), shortCode:shortCode(), createdAt:now, expiresAt:now+7*864e5, used:false };
+    await putLoop(loop);
+  }
+  const link=`${baseURL()}?join=${loop.pubId}&code=${encodeURIComponent(loop.transfer.shortCode)}`;
+  render(`
+  <button class="back" data-loop="${pubId}" data-go="holder">← Retour</button>
+  <h1>Transmettez le gobelet</h1>
+  <p class="mut sm" style="margin-top:6px">Faites scanner ce code par la personne à qui vous offrez le café. Elle enregistrera votre rencontre.</p>
+  <div class="qrbox">
+    <div id="qr"></div>
+    <div class="orsep" style="width:100%">ou saisissez ce code</div>
+    <div class="code">${loop.transfer.shortCode}</div>
+    <button class="btn" id="copyLink" style="margin-top:16px;max-width:280px">Copier le lien de transmission</button>
+  </div>
+  <div class="banner">🔒 À usage unique. Dès que la rencontre est enregistrée, ce code ne fonctionne plus. Il expire dans 7&nbsp;jours s’il n’est pas utilisé.</div>
+  <div class="note">Impossible de scanner&nbsp;? La personne peut scanner le QR commun du gobelet, choisir « Rejoindre une boucle » et taper le code ci-dessus.</div>
+  `);
+  const qr=document.getElementById('qr');
+  if(window.QRCode){ new QRCode(qr,{text:link,width:180,height:180,colorDark:'#2C2016',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M}); }
+  else qr.innerHTML='<div class="mut sm">QR indisponible — utilisez le code</div>';
+  document.getElementById('copyLink').onclick=()=>copy(link,'copyLink','Lien copié ✓');
+}
+
+/* ---------- screen: join ---------- */
+function joinScreen(){
+  render(`
+  <button class="back" data-go="home">← Retour</button>
+  <h1>Rejoindre une boucle</h1>
+  <p class="mut sm" style="margin-top:6px">Scannez le code affiché sur le téléphone de la personne qui vous transmet le gobelet, ou saisissez son code court.</p>
+  <div class="photo-pick" style="min-height:120px;cursor:default"><span style="font-size:26px">📷</span><span class="sm">Scanner le téléphone du détenteur<br>(via l’appareil photo)</span></div>
+  <div class="orsep">ou</div>
+  <div class="field"><label>Code de transmission</label><input id="j_code" placeholder="CAFE-482" style="text-transform:uppercase;letter-spacing:2px;font-weight:600"></div>
+  <div class="err" id="err"></div>
+  <div class="stack" style="margin-top:16px"><button class="btn pri" id="joinBtn">Continuer</button></div>
+  `);
+  document.getElementById('joinBtn').onclick=async()=>{
+    const err=document.getElementById('err'); let code=val('j_code').toUpperCase().replace(/\s/g,'');
+    if(!/^CAFE-\d{3}$/.test(code)) return showErr(err,'Code attendu au format CAFE-482.');
+    const loops=await allLoops();
+    const loop=loops.find(l=>l.status==='active'&&l.transfer&&!l.transfer.used&&l.transfer.shortCode===code&&l.transfer.expiresAt>Date.now());
+    if(!loop) return showErr(err,'Code inconnu, déjà utilisé ou expiré. Redemandez un code au détenteur.');
+    recordForm(loop.pubId,code);
+  };
+}
+async function startJoin(pubId,code){
+  const loop=await getLoop(pubId);
+  if(loop&&loop.status==='active'&&loop.transfer&&!loop.transfer.used&&loop.transfer.shortCode===code&&loop.transfer.expiresAt>Date.now()){ return recordForm(pubId,code); }
+  render(`<h1>Ce lien n’est plus valable</h1><p class="mut" style="margin-top:10px">La transmission a peut-être déjà été enregistrée, ou le code a expiré. Demandez un nouveau code au détenteur du gobelet.</p><div class="stack" style="margin-top:16px"><button class="btn" data-go="join">Saisir un autre code</button><button class="btn ghost" data-go="home">Accueil</button></div>`);
+}
+
+/* ---------- screen: record a meeting ---------- */
+async function recordForm(pubId,code){
+  const loop=await getLoop(pubId); if(!loop) return homeDefault();
+  const from=loop.meetings.length?loop.meetings[loop.meetings.length-1].to:loop.starter;
+  render(`
+  <div class="chip">🔗 Boucle rejointe</div>
+  <h1 style="margin-top:12px">Votre rencontre</h1>
+  <p class="mut sm" style="margin-top:6px">Immortalisez ce café partagé. La photo et les prénoms rejoindront la carte publique et le mur.</p>
+  <label class="photo-pick" id="pick"><span style="font-size:26px">🤳</span><span class="sm">Un selfie à deux, avec le gobelet</span><input type="file" accept="image/*" capture="user" id="f_photo"></label>
+  <div class="btn-row" style="margin-top:14px">
+    <div class="field" style="flex:1;margin-top:0"><label>Qui transmet</label><input id="f_from" value="${escapeHtml(from)}"></div>
+    <div class="field" style="flex:1;margin-top:0"><label>Vous</label><input id="f_to" placeholder="Sacha"></div>
+  </div>
+  <div class="field"><label>Ville ou lieu approximatif</label><input id="f_city" placeholder="Nantes"></div>
+  <div class="field"><label>Date</label><input id="f_date" type="date" value="${today()}"></div>
+  <div class="field"><label>Une légende (facultatif)</label><textarea id="f_cap" placeholder="Un café sur le port, entre deux averses."></textarea></div>
+  <label class="consent"><input type="checkbox" id="f_consent"><span class="sm">J’autorise la publication de cette photo et de nos prénoms. Je confirme avoir l’accord des personnes présentes — et l’autorisation d’un parent pour tout mineur visible.</span></label>
+  <div class="err" id="err"></div>
+  <div class="stack" style="margin-top:18px"><button class="btn pri" id="save">Valider la rencontre</button></div>
+  `);
+  hookPhoto('pick','f_photo');
+  document.getElementById('save').onclick=()=>saveMeeting(pubId,code);
+}
+async function saveMeeting(pubId,code){
+  const err=document.getElementById('err');
+  const from=val('f_from'),to=val('f_to'),city=val('f_city'),date=val('f_date'),cap=val('f_cap');
+  const consent=document.getElementById('f_consent').checked;
+  if(!to) return showErr(err,'Indiquez votre prénom.');
+  if(!from) return showErr(err,'Indiquez le prénom de la personne qui transmet.');
+  if(!city) return showErr(err,'Indiquez une ville.');
+  if(!consent) return showErr(err,'Cochez le consentement pour publier la rencontre.');
+  const loop=await getLoop(pubId);
+  if(!loop||loop.status!=='active'||!loop.transfer||loop.transfer.used||loop.transfer.shortCode!==code||loop.transfer.expiresAt<Date.now())
+    return showErr(err,'Cette transmission n’est plus valable. Redemandez un code au détenteur.');
+  const g=geocode(city);
+  const meeting={ id:uid(), from, to, city, lat:g.lat, lng:g.lng, approx:g.approx, date, caption:cap, photo:S.pending||null, hidden:false, consent:true, createdAt:Date.now() };
+  S.pending=null;
+  loop.meetings.push(meeting);
+  loop.transfer.used=true;                         // invalidate previous holder
+  loop.holderSecret=rnd(12);                        // rotate possession
+  loop.recoveryCode='BOUCLE-'+rnd(6).toUpperCase();
+  loop.transfer=null;
+  await putLoop(loop);
+  await addMine({pubId:loop.pubId,recoveryCode:loop.recoveryCode,holderSecret:loop.holderSecret});
+  confirmScreen(loop);
+}
+
+/* ---------- screen: confirmation ---------- */
+function confirmScreen(loop){
+  const maillon=loop.meetings.length+1;
+  render(`
+  <div class="confirm">
+    <svg class="seal" viewBox="0 0 100 100"><circle class="ring" cx="50" cy="50" r="42"/><path class="tick" d="M30 52l14 14 26-30"/></svg>
+    <h1 style="margin-top:8px">La boucle continue&nbsp;!</h1>
+    <p class="mut" style="margin-top:8px">Vous êtes maintenant le</p>
+    <div class="big-num">${maillon}<span style="font-size:24px">e</span></div>
+    <p class="mut">maillon de cette chaîne.</p>
+  </div>
+  <div class="banner" style="background:var(--green-t);color:var(--green-d)">🔒 Le code de la transmission précédente est désormais inutilisable. Conservez votre nouveau code de récupération.</div>
+  <div class="code" style="display:block;text-align:center;margin:14px auto;max-width:260px;font-size:22px">${loop.recoveryCode}</div>
+  <div class="stack" style="margin-top:8px">
+    <button class="btn cor" id="pass">Transmettre à mon tour</button>
+    <button class="btn" data-loop="${loop.pubId}" data-go="viewloop">Voir le parcours</button>
+    <button class="btn ghost" data-go="explore">Découvrir toutes les boucles →</button>
+  </div>
+  `);
+  document.getElementById('pass').onclick=()=>transmitScreen(loop.pubId);
+}
+
+/* ---------- screen: explore (map + wall + stats) ---------- */
+async function explore(){
+  const loops=(await allLoops()).filter(l=>l.status!=='suspended');
+  const st=stats(loops);
+  const meetings=[]; loops.forEach(l=>l.meetings.forEach((m,i)=>{ if(!m.hidden) meetings.push({...m,loop:l.pubId,maillon:i+2}); }));
+  render(`
+  <button class="back" data-go="home">← Retour</button>
+  <h1>Les boucles en circulation</h1>
+  <div class="stats">
+    <div class="stat"><b>${st.loops}</b><span>boucles</span></div>
+    <div class="stat"><b>${st.cafes}</b><span>cafés partagés</span></div>
+    <div class="stat"><b>${st.people}</b><span>participants</span></div>
+    <div class="stat"><b>${st.cities}</b><span>villes atteintes</span></div>
+  </div>
+  <div class="eyebrow">La carte des rencontres</div>
+  ${mapSVG(loops,null)}
+  <div class="eyebrow">Le mur des rencontres</div>
+  ${meetings.length? `<div class="wall">${meetings.slice().reverse().map(m=>wallCard(m)).join('')}</div>` : `<div class="empty">Pas encore de rencontre. Lancez la première boucle&nbsp;!</div>`}
+  `);
+  wireMap(loops,null);
+  V.querySelectorAll('[data-mm]').forEach(el=>el.onclick=()=>meetingDetail(el.dataset.loop,el.dataset.mm));
+}
+
+/* ---------- screen: view one loop ---------- */
+async function viewLoop(pubId){
+  const loop=await getLoop(pubId);
+  if(!loop) return render(`<h1>Boucle introuvable</h1><div class="stack" style="margin-top:14px"><button class="btn" data-go="explore">Découvrir les boucles</button></div>`);
+  const visible=loop.meetings.filter(m=>!m.hidden);
+  const mine=(await getMine()).some(x=>x.pubId===pubId&&x.holderSecret===loop.holderSecret&&loop.status==='active');
+  render(`
+  <button class="back" data-go="explore">← Toutes les boucles</button>
+  <h1>Le voyage de cette boucle</h1>
+  <p class="mut sm" style="margin-top:6px">${loop.meetings.length+1} maillons · départ ${escapeHtml(loop.startCity)} · ${fmtDate(new Date(loop.createdAt).toISOString().slice(0,10))}${loop.status==='suspended'?' · <span style="color:var(--coral-d)">boucle suspendue</span>':''}</p>
+  ${mapSVG([loop],pubId)}
+  <div class="thread">
+    <div class="node"><div class="dot">1</div><div class="m">${loop.startPhoto?`<img src="${loop.startPhoto}">`:''}<div><b>${escapeHtml(loop.starter)}</b><div class="sm mut">Départ · ${escapeHtml(loop.startCity)}</div></div></div></div>
+    ${visible.map((m,i)=>`<div class="node ${mine&&i===visible.length-1?'you':''}"><div class="dot">${loop.meetings.indexOf(m)+2}</div><div class="m">${m.photo?`<img src="${m.photo}">`:''}<div><b>${escapeHtml(m.to)}</b><div class="sm mut">reçu de ${escapeHtml(m.from)} · ${escapeHtml(m.city)} · ${fmtDate(m.date)}</div>${m.caption?`<div class="xs" style="margin-top:3px">“${escapeHtml(m.caption)}”</div>`:''}</div></div></div>`).join('')}
+  </div>
+  ${mine?`<div class="stack" style="margin-top:16px"><button class="btn cor" id="tr">☕ Transmettre à mon tour</button></div>`:''}
+  `);
+  wireMap([loop],pubId);
+  if(mine) document.getElementById('tr').onclick=()=>transmitScreen(pubId);
+}
+
+/* ---------- screen: recover ---------- */
+function recoverScreen(pre){
+  render(`
+  <button class="back" data-go="home">← Retour</button>
+  <h1>Récupérer votre boucle</h1>
+  <p class="mut sm" style="margin-top:6px">Nouveau téléphone ou navigateur effacé&nbsp;? Saisissez le code de récupération reçu la dernière fois que le gobelet vous a été transmis.</p>
+  <div class="field"><label>Code de récupération</label><input id="r_code" placeholder="BOUCLE-AB12CD" value="${pre||''}" style="text-transform:uppercase"></div>
+  <div class="err" id="err"></div>
+  <div class="stack" style="margin-top:16px"><button class="btn pri" id="rec">Récupérer</button></div>
+  <div class="note">Ce code est privé. L’URL publique d’une boucle ne donne jamais le droit de la transmettre.</div>
+  `);
+  document.getElementById('rec').onclick=async()=>{
+    const err=document.getElementById('err'); const code=val('r_code').toUpperCase().trim();
+    if(!code) return showErr(err,'Saisissez un code.');
+    const loop=(await allLoops()).find(l=>l.status==='active'&&l.recoveryCode.toUpperCase()===code);
+    if(!loop) return showErr(err,'Code inconnu ou boucle inactive.');
+    await addMine({pubId:loop.pubId,recoveryCode:loop.recoveryCode,holderSecret:loop.holderSecret});
+    holderHome(loop);
+  };
+}
+
+/* ---------- screen: admin ---------- */
+let adminOK=false;
+function adminGate(){
+  if(adminOK) return adminPanel();
+  render(`
+  <button class="back" data-go="home">← Retour</button>
+  <h1>Espace administration</h1>
+  <p class="mut sm" style="margin-top:6px">Accès réservé. (Prototype&nbsp;: mot de passe <code>cafe-admin</code>.)</p>
+  <div class="field"><label>Mot de passe</label><input id="a_pw" type="password"></div>
+  <div class="err" id="err"></div>
+  <div class="stack" style="margin-top:16px"><button class="btn pri" id="go">Entrer</button></div>
+  `);
+  document.getElementById('go').onclick=()=>{ if(val('a_pw')==='cafe-admin'){adminOK=true;adminPanel();} else showErr(document.getElementById('err'),'Mot de passe incorrect.'); };
+}
+async function adminPanel(){
+  const loops=await allLoops(); const st=stats(loops);
+  render(`
+  <button class="back" data-go="home">← Quitter</button>
+  <h1>Modération</h1>
+  <div class="stats">
+    <div class="stat"><b>${st.loops}</b><span>boucles actives</span></div>
+    <div class="stat"><b>${st.cafes}</b><span>rencontres</span></div>
+    <div class="stat"><b>${st.cities}</b><span>villes</span></div>
+    <div class="stat"><b>${st.longest}</b><span>plus longue chaîne</span></div>
+  </div>
+  <div class="stack" style="margin-top:14px"><button class="btn" id="exp">⬇︎ Exporter les données (JSON)</button></div>
+  ${loops.sort((a,b)=>b.createdAt-a.createdAt).map(l=>adminLoop(l)).join('')||'<div class="empty">Aucune boucle.</div>'}
+  `);
+  document.getElementById('exp').onclick=()=>exportData(loops);
+  V.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>adminAct(b.dataset.act,b.dataset.loop,b.dataset.mid));
+}
+function adminLoop(l){
+  return `<div class="card" style="margin-top:14px;padding:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><b class="sm">Boucle ${l.pubId.slice(-5)}</b><div class="xs mut">${escapeHtml(l.starter)} · ${escapeHtml(l.startCity)} · ${l.meetings.length+1} maillons${l.status==='suspended'?' · <span style="color:var(--coral-d)">suspendue</span>':''}</div></div>
+      <button class="btn" style="width:auto;padding:8px 12px;font-size:13px" data-act="${l.status==='suspended'?'restore':'suspend'}" data-loop="${l.pubId}">${l.status==='suspended'?'Restaurer':'Suspendre'}</button>
+    </div>
+    ${l.meetings.map((m,i)=>`<div style="display:flex;gap:10px;align-items:center;border-top:1px solid var(--line);padding:9px 0;margin-top:9px">
+      ${m.photo?`<img src="${m.photo}" style="width:40px;height:40px;border-radius:9px;object-fit:cover;${m.hidden?'opacity:.35':''}">`:'<div style="width:40px;height:40px;border-radius:9px;background:var(--green-t)"></div>'}
+      <div style="flex:1;min-width:0"><div class="sm">${escapeHtml(m.from)} → ${escapeHtml(m.to)} ${m.hidden?'<span class="xs" style="color:var(--coral-d)">(masquée)</span>':''}</div><div class="xs mut">${escapeHtml(m.city)} · ${fmtDate(m.date)}</div></div>
+      <button class="btn" style="width:auto;padding:6px 9px;font-size:12px" data-act="edit" data-loop="${l.pubId}" data-mid="${m.id}">Corriger</button>
+      <button class="btn" style="width:auto;padding:6px 9px;font-size:12px" data-act="${m.hidden?'show':'hide'}" data-loop="${l.pubId}" data-mid="${m.id}">${m.hidden?'Afficher':'Masquer'}</button>
+      <button class="btn" style="width:auto;padding:6px 9px;font-size:12px;color:var(--coral-d)" data-act="del" data-loop="${l.pubId}" data-mid="${m.id}">Suppr.</button>
+    </div>`).join('')}
+  </div>`;
+}
+async function adminAct(act,pubId,mid){
+  const loop=await getLoop(pubId); if(!loop) return;
+  if(act==='suspend')loop.status='suspended';
+  else if(act==='restore')loop.status='active';
+  else{ const m=loop.meetings.find(x=>x.id===mid); if(!m)return;
+    if(act==='hide')m.hidden=true;
+    else if(act==='show')m.hidden=false;
+    else if(act==='del')loop.meetings=loop.meetings.filter(x=>x.id!==mid);
+    else if(act==='edit'){ const city=prompt('Ville :',m.city); if(city!==null){m.city=city;const g=geocode(city);m.lat=g.lat;m.lng=g.lng;} const to=prompt('Prénom (destinataire) :',m.to); if(to!==null)m.to=to; const date=prompt('Date (AAAA-MM-JJ) :',m.date); if(date!==null)m.date=date; }
+  }
+  await putLoop(loop); adminPanel();
+}
+function exportData(loops){
+  const clean=loops.map(l=>({...l,holderSecret:'***',recoveryCode:'***',meetings:l.meetings.map(m=>({...m,photo:m.photo?'[image]':null}))}));
+  const blob=new Blob([JSON.stringify(clean,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='boucle-cafe-export.json';a.click();
+}
+
+/* ---------- map ---------- */
+function project(lat,lng){ const x=(lng-(-5))/(8.3-(-5))*300; const y=(51.1-lat)/(51.1-41.3)*300; return [8+x*0.94, 6+y*0.94]; }
+function mapSVG(loops,focus){
+  let pts='',lines='';
+  loops.forEach(l=>{
+    const chain=[[l.startLat,l.startLng],...l.meetings.filter(m=>!m.hidden).map(m=>[m.lat,m.lng])];
+    if((focus===l.pubId)&&chain.length>1){ const d=chain.map((c,i)=>{const p=project(c[0],c[1]);return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' '); lines+=`<path class="mchain" d="${d}"/>`; }
+    l.meetings.forEach((m,i)=>{ if(m.hidden)return; const p=project(m.lat,m.lng); pts+=`<circle class="mpt" data-loop="${l.pubId}" data-mid="${m.id}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="6"/>`; });
+    const ps=project(l.startLat,l.startLng); pts+=`<circle class="mpt" cx="${ps[0].toFixed(1)}" cy="${ps[1].toFixed(1)}" r="5" opacity=".6"/>`;
+  });
+  return `<div class="map"><svg viewBox="0 0 300 300" role="img" aria-label="Carte des rencontres">
+    <rect x="0" y="0" width="300" height="300" fill="#F1ECDF"/>
+    <path class="mland" d="M120 20 Q95 40 80 60 Q60 75 55 100 Q40 115 55 140 Q45 170 70 190 Q85 230 120 250 Q160 270 200 250 Q245 235 250 195 Q265 160 245 130 Q255 100 225 85 Q215 55 185 45 Q160 15 120 20 Z"/>
+    ${lines}${pts}
+  </svg><div class="mpop" id="mpop"></div></div>
+  <div class="note">Points reliés uniquement sur la boucle consultée ; localisation limitée à la ville, jamais d’adresse précise.</div>`;
+}
+function wireMap(loops,focus){
+  const pop=document.getElementById('mpop'); if(!pop)return;
+  V.querySelectorAll('.mpt[data-mid]').forEach(c=>{ c.onclick=async()=>{
+    const l=loops.find(x=>x.pubId===c.dataset.loop)||await getLoop(c.dataset.loop); const m=l.meetings.find(x=>x.id===c.dataset.mid); if(!m)return;
+    pop.className='mpop on'; pop.innerHTML=`${m.photo?`<img src="${m.photo}">`:''}<div><b class="sm">${escapeHtml(m.from)} → ${escapeHtml(m.to)}</b><div class="xs mut">${escapeHtml(m.city)} · ${fmtDate(m.date)}</div></div>`;
+  }; });
+}
+function wallCard(m){ return `<figure data-mm="${m.id}" data-loop="${m.loop}">${m.photo?`<img src="${m.photo}">`:'<div style="aspect-ratio:1;background:var(--green-t)"></div>'}<figcaption><div class="nm">${escapeHtml(m.from)} → ${escapeHtml(m.to)}</div><div class="mt xs">${escapeHtml(m.city)} · maillon ${m.maillon} · ${fmtDate(m.date)}</div></figcaption></figure>`; }
+async function meetingDetail(pubId,mid){
+  const loop=await getLoop(pubId); const idx=loop.meetings.findIndex(m=>m.id===mid); const m=loop.meetings[idx];
+  render(`<button class="back" data-go="explore">← Le mur</button>
+  ${m.photo?`<img src="${m.photo}" style="width:100%;border-radius:16px;margin-top:8px" alt="">`:''}
+  <h1 style="margin-top:14px">${escapeHtml(m.from)} → ${escapeHtml(m.to)}</h1>
+  <p class="mut sm" style="margin-top:6px">${escapeHtml(m.city)} · ${fmtDate(m.date)} · ${idx+2}<sup>e</sup> maillon</p>
+  ${m.caption?`<p style="margin-top:10px;font-family:var(--serif);font-size:18px">“${escapeHtml(m.caption)}”</p>`:''}
+  <div class="stack" style="margin-top:16px"><button class="btn" data-loop="${pubId}" data-go="viewloop">Voir sa place dans la chaîne</button></div>`);
+}
+
+/* ---------- stats ---------- */
+function stats(loops){
+  const act=loops.filter(l=>l.status==='active');
+  let cafes=0,cities=new Set(),people=new Set(),longest=0;
+  loops.forEach(l=>{ if(l.status==='suspended')return; cities.add(norm(l.startCity)); people.add(norm(l.starter)); const vis=l.meetings.filter(m=>!m.hidden); cafes+=vis.length; vis.forEach(m=>{cities.add(norm(m.city));people.add(norm(m.to));people.add(norm(m.from));}); longest=Math.max(longest,vis.length+1); });
+  return {loops:act.length,cafes,cities:cities.size,people:people.size,longest};
+}
+
+/* ---------- small utils ---------- */
+function val(id){return (document.getElementById(id)?.value||'').trim();}
+function showErr(el,msg){el.textContent=msg;el.classList.add('on');el.scrollIntoView({block:'center',behavior:'smooth'});}
+function hookPhoto(pickId,inputId){ const inp=document.getElementById(inputId); inp.onchange=async()=>{ if(!inp.files[0])return; const d=await resizeImage(inp.files[0],720,0.72); S.pending=d; const pick=document.getElementById(pickId); pick.innerHTML=`<img src="${d}" alt="aperçu">`+pick.querySelector('input').outerHTML; hookPhoto(pickId,inputId); }; }
+async function copy(text,btnId,ok){ try{await navigator.clipboard.writeText(text);}catch(e){} const b=document.getElementById(btnId); if(b){const t=b.textContent;b.textContent=ok;setTimeout(()=>b.textContent=t,1600);} }
+
+/* ---------- navigation wiring ---------- */
+const menu=document.getElementById('menu');
+document.getElementById('menuBtn').onclick=(e)=>{e.stopPropagation();menu.classList.toggle('hide');};
+document.addEventListener('click',(e)=>{ if(!menu.contains(e.target)&&e.target.id!=='menuBtn')menu.classList.add('hide'); });
+document.addEventListener('click',(e)=>{
+  const t=e.target.closest('[data-go]'); if(!t)return; menu.classList.add('hide');
+  const go=t.dataset.go, lp=t.dataset.loop;
+  if(go==='home')boot();
+  else if(go==='start')startForm();
+  else if(go==='join')joinScreen();
+  else if(go==='explore')explore();
+  else if(go==='recover')recoverScreen();
+  else if(go==='admin')adminGate();
+  else if(go==='viewloop')viewLoop(lp);
+  else if(go==='holder')getLoop(lp).then(holderHome);
+});
+document.getElementById('lnkRetrait').onclick=(e)=>{e.preventDefault();alert('Prototype : la demande de retrait serait transmise à la modération, qui masque la photo concernée sous 48 h.');};
+document.getElementById('lnkPriv').onclick=(e)=>{e.preventDefault();alert('Prototype : politique de confidentialité — publication des seuls prénoms, ville approximative, consentement explicite, retrait sur demande, hébergement UE en production.');};
+
+/* recover via url */
+(function(){ const p=new URLSearchParams(location.search); if(p.get('recover')&&p.get('rc')){ recoverScreen(p.get('rc')); return; } boot(); })();
+</script>
