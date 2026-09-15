@@ -1,5 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/csqj9217/public_html/boucle-greenfib/
+    - export DEPLOYPATH=/home/csqj9217/public_html/la-boucle/
+    - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R * $DEPLOYPATH
