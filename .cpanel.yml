@@ -1,6 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/csqj9217/ocitodesign.fr/la-boucle/
+    - export DEPLOYPATH=/home/csqj9217/ocitodesign.fr/la-boucle-greenfib/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/cp -R * $DEPLOYPATH
