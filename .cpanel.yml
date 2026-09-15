@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/csqj9217/public_html/boucle-greenfib/
+    - /bin/cp -R * $DEPLOYPATH
