@@ -150,6 +150,7 @@ input:focus,textarea:focus,select:focus,.btn:focus-visible,button:focus-visible{
 .cupzone{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:22px;text-align:center}
 .cupzone label{display:block;font-weight:600;font-family:var(--serif);font-size:17px;margin-bottom:10px;color:var(--deep)}
 .cupinput{width:100%;padding:16px;border:2px solid var(--line-s);border-radius:14px;background:#fff;color:var(--deep);font-family:var(--serif);font-weight:700;font-size:24px;letter-spacing:3px;text-align:center}
+input[list]::-webkit-calendar-picker-indicator{display:none !important}
 .cupinput:focus{outline:2px solid var(--teal);outline-offset:2px;border-color:var(--teal)}
 .cuphint{font-size:12.5px;color:var(--ink-soft);margin-top:8px}
 .summary-card{background:var(--deep-t);border-radius:14px;padding:14px;margin-top:14px;text-align:left}
@@ -307,12 +308,14 @@ async function checkCup(){
 function registerScreen(number, existing){
   const isNew=!existing;
   const summary = existing ? `<div class="summary-card"><b>${existing.meetings.length+1}</b> maillon${existing.meetings.length?'s':''} déjà écrit${existing.meetings.length?'s':''}.<br>Parti de <b>${escapeHtml(existing.startCity)}</b>${existing.meetings.length?`, dernier arrêt à <b>${escapeHtml(existing.meetings[existing.meetings.length-1].city)}</b>`:''}.</div>` : '';
+  const journey = existing ? `<div class="eyebrow" style="margin-top:16px">Le parcours jusqu’ici</div><div class="mapbox" id="mapRegister"></div>${threadHTML(existing)}` : '';
   render(`
   <button class="back" data-go="home">← Retour</button>
   <div class="chip">${isNew?'☕ Nouveau parcours':'🔗 Parcours en cours'}</div>
   <h1 style="margin-top:12px">Gobelet n°${escapeHtml(number)}</h1>
   ${summary}
-  <p class="mut sm" style="margin-top:10px">${isNew?'Vous êtes la première personne à écrire son histoire.':'Ajoutez votre rencontre à la suite.'}</p>
+  ${journey}
+  <p class="mut sm" style="margin-top:14px">${isNew?'Vous êtes la première personne à écrire son histoire.':'Ajoutez votre rencontre à la suite.'}</p>
   <label class="photo-pick" id="pick"><span style="font-size:26px">📷</span><span class="sm">Une photo avec le gobelet, ici et maintenant</span><input type="file" accept="image/*" capture="environment" id="f_photo"></label>
   <div class="field"><label>Votre prénom</label><input id="f_name" placeholder="Camille" autocomplete="given-name"></div>
   <div class="field"><label>Ville ou lieu où vous êtes</label><input id="f_city" list="cityList" placeholder="Rennes" autocomplete="off">${cityDatalist('cityList')}
@@ -324,6 +327,7 @@ function registerScreen(number, existing){
   <div class="err" id="err"></div>
   <div class="stack" style="margin-top:18px"><button class="btn pri" id="save">${isNew?'Lancer la boucle':'Valider ma rencontre'}</button></div>
   `);
+  if(existing){ paintMap('mapRegister',[existing],existing.pubId); V.querySelectorAll('.thread .node').forEach((el,i)=>{ el.style.cursor='pointer'; el.onclick=()=>nodeDetail(existing.pubId,i); }); }
   hookPhoto('pick','f_photo');
   S.pendingGeo=null;
   document.getElementById('f_city').addEventListener('input',()=>{S.pendingGeo=null; const box=document.getElementById('citySuggestions'); if(box) box.innerHTML='';});
@@ -603,21 +607,35 @@ function stats(loops){
 function val(id){return (document.getElementById(id)?.value||'').trim();}
 function showErr(el,msg){el.textContent=msg;el.classList.add('on');el.scrollIntoView({block:'center',behavior:'smooth'});}
 function hookPhoto(pickId,inputId){ const inp=document.getElementById(inputId); inp.onchange=async()=>{ if(!inp.files[0])return; const {dataURL,blob}=await resizeImage(inp.files[0],900,0.75); S.pending=dataURL; S.pendingBlob=blob; const pick=document.getElementById(pickId); pick.innerHTML=`<img src="${dataURL}" alt="aperçu">`+pick.querySelector('input').outerHTML; hookPhoto(pickId,inputId); }; }
-function useGeoloc(){
+async function ipGeolocate(){
+  try{
+    const r=await fetch('https://ipapi.co/json/');
+    if(!r.ok) return null;
+    const j=await r.json();
+    if(j && j.latitude && j.longitude) return {lat:j.latitude,lng:j.longitude,city:j.city};
+    return null;
+  }catch(e){ return null; }
+}
+async function useGeoloc(){
   const err=document.getElementById('err');
-  if(!navigator.geolocation) return showErr(err,'La géolocalisation n’est pas disponible sur cet appareil.');
-  const btn=document.getElementById('geoBtn'); if(btn){btn.disabled=true;btn.textContent='Localisation…';}
+  const btn=document.getElementById('geoBtn');
+  const cityInput=document.getElementById('f_city');
+  if(btn){btn.disabled=true;btn.textContent='Localisation…';}
+  const applyResult=(lat,lng,label,approxNote)=>{
+    S.pendingGeo={lat,lng};
+    if(cityInput) cityInput.value=label;
+    if(btn){btn.disabled=false;btn.textContent=approxNote?'📍 Position utilisée ✓ (approx.)':'📍 Position utilisée ✓';}
+  };
+  const fallbackToIP=async()=>{
+    const res=await ipGeolocate();
+    if(res){ applyResult(res.lat,res.lng,res.city||nearestCityLabel(res.lat,res.lng),true); }
+    else{ if(btn){btn.disabled=false;btn.textContent='📍 Utiliser ma position';} showErr(err,'Impossible d’obtenir votre position — vérifiez que la localisation est activée, ou indiquez la ville manuellement.'); }
+  };
+  if(!navigator.geolocation) return fallbackToIP();
   navigator.geolocation.getCurrentPosition(pos=>{
     const {latitude:lat,longitude:lng}=pos.coords;
-    S.pendingGeo={lat,lng};
-    const label=nearestCityLabel(lat,lng);
-    const cityInput=document.getElementById('f_city');
-    if(cityInput) cityInput.value=label;
-    if(btn){btn.disabled=false;btn.textContent='📍 Position utilisée ✓';}
-  },()=>{
-    if(btn){btn.disabled=false;btn.textContent='📍 Utiliser ma position';}
-    showErr(err,'Impossible d’obtenir votre position (autorisation refusée ou indisponible).');
-  },{enableHighAccuracy:true,timeout:8000});
+    applyResult(lat,lng,nearestCityLabel(lat,lng),false);
+  }, fallbackToIP, {enableHighAccuracy:true,timeout:8000});
 }
 
 /* ---------- navigation wiring ---------- */
