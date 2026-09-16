@@ -229,8 +229,7 @@ async function geocode(city){
   if(cityCoordCache[k]) return {lat:cityCoordCache[k].lat,lng:cityCoordCache[k].lng,approx:false};
   const hits=await nominatimSearch(city,1);
   if(hits.length){ cityCoordCache[k]={lat:hits[0].lat,lng:hits[0].lng}; return {lat:hits[0].lat,lng:hits[0].lng,approx:false}; }
-  const j=()=>(Math.random()-.5)*1.2;
-  return {lat:46.7+j(),lng:2.4+j(),approx:true};
+  return null;
 }
 let cityDebounce=null;
 function wireCitySuggest(inputId,listId){
@@ -318,6 +317,7 @@ function registerScreen(number, existing){
   <div class="field"><label>Votre prénom</label><input id="f_name" placeholder="Camille" autocomplete="given-name"></div>
   <div class="field"><label>Ville ou lieu où vous êtes</label><input id="f_city" list="cityList" placeholder="Rennes" autocomplete="off">${cityDatalist('cityList')}
     <button type="button" class="btn ghost" id="geoBtn" style="margin-top:8px;padding:8px 4px;width:auto">📍 Utiliser ma position</button>
+    <div id="citySuggestions" style="margin-top:6px"></div>
   </div>
   <div class="field"><label>Une légende (facultatif)</label><textarea id="f_cap" placeholder="Un café sur le port, entre deux averses."></textarea></div>
   <label class="consent"><input type="checkbox" id="f_consent"><span class="sm">J’autorise la publication de cette photo et de mon prénom. Je confirme avoir l’accord des personnes présentes — et l’autorisation d’un parent pour tout mineur visible.</span></label>
@@ -326,7 +326,7 @@ function registerScreen(number, existing){
   `);
   hookPhoto('pick','f_photo');
   S.pendingGeo=null;
-  document.getElementById('f_city').addEventListener('input',()=>{S.pendingGeo=null;});
+  document.getElementById('f_city').addEventListener('input',()=>{S.pendingGeo=null; const box=document.getElementById('citySuggestions'); if(box) box.innerHTML='';});
   wireCitySuggest('f_city','cityList');
   document.getElementById('geoBtn').onclick=useGeoloc;
   document.getElementById('save').onclick=()=>saveRegistration(number, existing?existing.pubId:null);
@@ -335,17 +335,22 @@ async function saveRegistration(number,existingPubId){
   const err=document.getElementById('err');
   const name=val('f_name'), city=val('f_city'), cap=val('f_cap');
   const consent=document.getElementById('f_consent').checked;
+  const btn=document.getElementById('save');
+  const resetBtn=()=>{ if(btn){btn.disabled=false;btn.textContent=existingPubId?'Valider ma rencontre':'Lancer la boucle';} };
   if(!name) return showErr(err,'Indiquez votre prénom.');
   if(!city) return showErr(err,'Indiquez une ville ou un lieu.');
   if(!consent) return showErr(err,'Cochez le consentement pour publier votre rencontre.');
-  const btn=document.getElementById('save'); if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
+  if(btn){btn.disabled=true;btn.textContent='Vérification…';}
   const g = S.pendingGeo ? {lat:S.pendingGeo.lat, lng:S.pendingGeo.lng, approx:false} : await geocode(city);
+  if(!g){ resetBtn(); return showCitySuggestions(city); }
+  document.getElementById('citySuggestions').innerHTML='';
+  if(btn) btn.textContent='Enregistrement…';
   const photoUrl = await uploadPhoto(S.pendingBlob);
   S.pending=null; S.pendingBlob=null; S.pendingGeo=null;
   let loop;
   if(existingPubId){
     loop=await getLoop(existingPubId);
-    if(!loop||loop.status!=='active'){ if(btn){btn.disabled=false;btn.textContent='Valider ma rencontre';} return showErr(err,'Ce parcours n’est plus actif.'); }
+    if(!loop||loop.status!=='active'){ resetBtn(); return showErr(err,'Ce parcours n’est plus actif.'); }
     const meeting={id:uid(),name,city,lat:g.lat,lng:g.lng,approx:g.approx,date:today(),caption:cap,photo:photoUrl,hidden:false,consent:true,createdAt:Date.now()};
     loop.meetings.push(meeting);
   }else{
@@ -353,6 +358,21 @@ async function saveRegistration(number,existingPubId){
   }
   await putLoop(loop);
   confirmScreen(loop);
+}
+async function showCitySuggestions(city){
+  const err=document.getElementById('err');
+  showErr(err,'Cette ville n’est pas reconnue. Choisissez une suggestion :');
+  const box=document.getElementById('citySuggestions'); if(!box) return;
+  box.innerHTML='<span class="xs mut">Recherche…</span>';
+  const results=await nominatimSearch(city,5);
+  results.forEach(r=>{ cityCoordCache[norm(r.label)]={lat:r.lat,lng:r.lng}; });
+  if(!results.length){ box.innerHTML='<span class="xs mut">Aucune suggestion trouvée — vérifiez l’orthographe.</span>'; return; }
+  box.innerHTML=results.map(r=>`<button type="button" class="chip" style="margin:4px 6px 0 0;cursor:pointer;border:none" data-city="${escapeHtml(r.label)}">${escapeHtml(r.label)}</button>`).join('');
+  box.querySelectorAll('[data-city]').forEach(b=>b.onclick=()=>{
+    document.getElementById('f_city').value=b.dataset.city;
+    box.innerHTML='';
+    err.classList.remove('on');
+  });
 }
 
 /* ---------- screen: confirmation ---------- */
