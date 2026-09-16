@@ -386,6 +386,7 @@ function threadHTML(loop){
 function confirmScreen(loop){
   const maillon=loop.meetings.length+1;
   render(`
+  <button class="back" data-go="home">← Retour à l’accueil</button>
   <div class="confirm">
     <svg class="seal" viewBox="0 0 100 100"><circle class="ring" cx="50" cy="50" r="42"/><path class="tick" d="M30 52l14 14 26-30"/></svg>
     <h1 style="margin-top:8px">${maillon===1?'La boucle est lancée&nbsp;!':'La boucle continue&nbsp;!'}</h1>
@@ -399,7 +400,6 @@ function confirmScreen(loop){
   ${threadHTML(loop)}
   <div class="stack" style="margin-top:16px">
     <button class="btn ghost" data-go="explore">Découvrir toutes les boucles →</button>
-    <button class="btn ghost" data-go="home">Retour à l’accueil</button>
   </div>
   `);
   paintMap('mapConfirm', [loop], loop.pubId);
