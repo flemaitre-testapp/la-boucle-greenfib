@@ -381,6 +381,7 @@ async function viewLoop(pubId){
   ${loop.status==='active'?`<div class="stack" style="margin-top:16px"><button class="btn pri" id="continueHere">☕ Ajouter ma rencontre à ce gobelet</button></div>`:''}
   `);
   paintMap('mapLoop', [loop], pubId);
+  V.querySelectorAll('.thread .node').forEach((el,i)=>{ el.style.cursor='pointer'; el.onclick=()=>nodeDetail(pubId,i); });
   const cbtn=document.getElementById('continueHere');
   if(cbtn) cbtn.onclick=()=>registerScreen(loop.cupNumber, loop);
 }
@@ -500,6 +501,23 @@ function paintMap(elId, loops, focusPubId){
 }
 
 function wallCard(m){ return `<figure data-mm="${m.id}" data-loop="${m.loop}">${m.photo?`<img src="${m.photo}">`:'<div style="aspect-ratio:1;background:var(--teal-t)"></div>'}<figcaption><div class="nm">${escapeHtml(m.name)}</div><div class="mt xs">${escapeHtml(m.city)} · maillon ${m.maillon} · ${fmtDate(m.date)}</div></figcaption></figure>`; }
+async function nodeDetail(pubId,idx){
+  const loop=await getLoop(pubId); if(!loop) return;
+  const visible=loop.meetings.filter(m=>!m.hidden);
+  if(idx===0){
+    return render(`<button class="back" data-loop="${pubId}" data-go="viewloop">← Retour au parcours</button>
+    ${loop.startPhoto?`<img src="${loop.startPhoto}" style="width:100%;border-radius:16px;margin-top:8px" alt="">`:''}
+    <h1 style="margin-top:14px">${escapeHtml(loop.starter)}</h1>
+    <p class="mut sm" style="margin-top:6px">${escapeHtml(loop.startCity)} · Départ · 1<sup>er</sup> maillon</p>`);
+  }
+  const m=visible[idx-1]; if(!m) return;
+  const maillon=loop.meetings.indexOf(m)+2;
+  render(`<button class="back" data-loop="${pubId}" data-go="viewloop">← Retour au parcours</button>
+  ${m.photo?`<img src="${m.photo}" style="width:100%;border-radius:16px;margin-top:8px" alt="">`:''}
+  <h1 style="margin-top:14px">${escapeHtml(m.name)}</h1>
+  <p class="mut sm" style="margin-top:6px">${escapeHtml(m.city)} · ${fmtDate(m.date)} · ${maillon}<sup>e</sup> maillon</p>
+  ${m.caption?`<p style="margin-top:10px;font-family:var(--serif);font-size:18px">“${escapeHtml(m.caption)}”</p>`:''}`);
+}
 async function meetingDetail(pubId,mid){
   const loop=await getLoop(pubId); const idx=loop.meetings.findIndex(m=>m.id===mid); const m=loop.meetings[idx];
   render(`<button class="back" data-go="explore">← Le mur</button>
